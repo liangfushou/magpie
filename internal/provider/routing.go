@@ -597,7 +597,7 @@ func (a Allowance) renewing(model string, now time.Time) []Limit {
 }
 
 // Unreached is how many of Renewal's windows, the biggest first, Smart
-// passes over, ranking the account by the next one: a window whose left
+// and Pace pass over, ranking the account by the next one: a window whose left
 // the next shorter window can no longer let through before it renews,
 // once that one renews, unless what that one has left is used first.
 // Both are counted in one unit (Limit.Of): a Volcengine Agent Plan's
@@ -613,7 +613,12 @@ func (a Allowance) renewing(model string, now time.Time) []Limit {
 // everywhere in Smart. Windows that don't tell their counts, or tell
 // them in different units, are never compared: 0.
 func (a Allowance) Unreached(model string, now time.Time) int {
-	ls := a.renewing(model, now)
+	return unreachedWindows(a.renewing(model, now))
+}
+
+// unreachedWindows counts the leading windows in renewing's order that the
+// smaller budgets cannot use up before they renew.
+func unreachedWindows(ls []Limit) int {
 	n := 0
 	for ; n+1 < len(ls); n++ {
 		big, next := ls[n], ls[n+1]
@@ -754,9 +759,20 @@ const FreshPace = 100 / (7 * 24.0)
 // all it has left when the amount isn't told, as Renewal takes it. A
 // WorkBuddy account whose check-in credits expire tomorrow goes ahead of
 // one whose month has more left but nothing expiring (lcyksp on
-// Discord); due is then the expiry.
+// Discord); due is then the expiry. A budget its next shorter window can
+// no longer use up is passed over, as in Unreached (#5641).
 func (a Allowance) Pace(model string, now time.Time) (pace float64, due time.Time) {
 	model = strings.ToLower(model)
+	var skipAbove time.Duration
+	if len(a) > 1 {
+		ls := a.renewing(model, now)
+		if n := unreachedWindows(ls); n > 0 {
+			// Each skipped window has a strictly longer span than the
+			// next. Keep the original readings: renewing infers resets
+			// and moves them to credit expiries, which Pace treats apart.
+			skipAbove = ls[n].Span
+		}
+	}
 	restart := a.Restarts(now)
 	// until is how long a window runs from now and renews when; a restart
 	// sooner cuts it short
@@ -769,7 +785,7 @@ func (a Allowance) Pace(model string, now time.Time) (pace float64, due time.Tim
 	any, used := false, 0.0
 	short, partial, shortPace, shortDue := false, false, 0.0, time.Time{}
 	for _, l := range a {
-		if !l.applies(model) {
+		if !l.applies(model) || skipAbove > 0 && l.Span > skipAbove {
 			continue
 		}
 		partial = partial || l.partial

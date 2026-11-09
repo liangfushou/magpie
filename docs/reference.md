@@ -2071,7 +2071,12 @@ each of these groups ordered by the share used.
   share of the week left divided by the hours until the week renews (at
   least 1): 60% left with 20 hours to go is 3 per hour. With two weekly
   windows that count the model (Opus's own and the general one), the lower
-  pace counts. An account with no week goes by its 5 hours. Credits in a
+  pace counts. A month that the remaining weeks can no longer use up is
+  passed over, as in Smart: the week's pace counts instead. While the
+  weeks can still use up the month, the month continues to limit the
+  pace. This comparison needs both windows' counts in the same unit;
+  percentages alone are not enough. An account with no week goes by its
+  5 hours. Credits in a
   window that expire before it renews (WorkBuddy's check-in credits) count
   as lost then: their share of the window, divided by the hours until they
   expire (at least 1), is the window's pace when it is the higher, so 70 of
