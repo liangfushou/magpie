@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/yetone/magpie/internal/plugin"
 	"github.com/yetone/magpie/internal/settings"
 )
 
@@ -47,6 +48,8 @@ func TestPluginsStateGivesThePluginsOwnIcon(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(settings.Dir(), "plugins.json"), b, 0o644); err != nil {
 		t.Fatal(err)
 	}
+	plugin.UseCached([]plugin.Provider{})
+	t.Cleanup(plugin.Settle)
 	got := map[string]string{}
 	for _, p := range pluginsState(context.Background(), nil).Plugins {
 		got[p.Spec] = p.Icon

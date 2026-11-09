@@ -34,6 +34,8 @@ func pluginsSandbox(t *testing.T) string {
 	t.Setenv("USERPROFILE", dir)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
+	t.Setenv("MAGPIE_BUN", "")
+	t.Cleanup(plugin.Settle)
 	return appdir.Config()
 }
 
@@ -53,7 +55,6 @@ func TestPluginsStateNamesWithoutAsking(t *testing.T) {
 	}
 	// what the plugins said the last time magpie asked them
 	plugin.UseCached([]plugin.Provider{{ID: "github-copilot", Spec: spec, Name: "GitHub Copilot"}})
-	t.Cleanup(func() { plugin.UseCached(nil) })
 
 	// with a context that would give up at once if anything waited on the host
 	ctx, cancel := context.WithCancel(context.Background())

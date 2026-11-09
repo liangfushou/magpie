@@ -62,6 +62,8 @@ func TestPluginsStateGivesAGitPackagesOwnName(t *testing.T) {
 		"name": "magpie-bidi", "version": "0.1.0", "main": "index.js", "magpie": map[string]any{"name": "Qoder‮"},
 	})
 	write(filepath.Join(settings.Dir(), "plugins.json"), map[string]any{"plugins": []map[string]any{{"spec": office}, {"spec": plain}, {"spec": bidi}}})
+	plugin.UseCached([]plugin.Provider{})
+	t.Cleanup(plugin.Settle)
 
 	got := map[string]pluginEntryJSON{}
 	for _, p := range pluginsState(context.Background(), nil).Plugins {
