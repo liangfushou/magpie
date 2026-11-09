@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -17,19 +18,23 @@ import (
 // reads left task after task alive past their callers (#4678).
 func TestOrdinaryCallCancelTellsTheHost(t *testing.T) {
 	f := newFakeHost(t)
-	// the call count is read beside a caller goroutine still admitting, so
-	// it is read under the host's lock
+	// The call's cleanup changes the count, so read it under the host's lock.
 	liveCalls := func() int {
 		f.mu.Lock()
 		defer f.mu.Unlock()
 		return len(f.host.calls)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	waited := make(chan error, 1)
 	go func() {
 		waited <- f.host.call(ctx, "usage", map[string]any{"provider": "fakeco"}, nil)
 	}()
-	waitFor(t, "the usage call reached the host", func() bool { return liveCalls() == 1 })
+	// Admission precedes sending: a call cancelled before it is sent needs
+	// no abort. Wait until the fake host has received the usage call.
+	waitFor(t, "the usage call reached the host", func() bool {
+		return slices.Contains(f.methods(), "usage")
+	})
 	cancel()
 	if err := <-waited; !errors.Is(err, context.Canceled) {
 		t.Fatalf("usage = %v, want canceled", err)
