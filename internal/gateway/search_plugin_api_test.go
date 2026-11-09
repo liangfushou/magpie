@@ -32,6 +32,8 @@ func plugged(t *testing.T, spec string, off bool) {
 	}
 	write("plugins.json", `{"plugins":[{"spec":"`+spec+`"`+offs+`}]}`)
 	write("plugin-searches.json", `{"`+spec+`":[{"id":"mojeek","name":"Mojeek","keysURL":"https://www.mojeek.com/services/api/"}]}`)
+	plugin.UseCached([]plugin.Provider{})
+	t.Cleanup(plugin.Settle)
 }
 
 // A search API a plugin gives is asked on the same path as Tavily and the
@@ -42,6 +44,8 @@ func plugged(t *testing.T, spec string, off bool) {
 // not listed.
 func TestPluginSearchAPI(t *testing.T) {
 	fresh(t)
+	forgetSearchKeys()
+	t.Cleanup(forgetSearchKeys)
 	const spec = "@acme/opencode-mojeek-search@1.0.0"
 	const id = "mojeek-search:mojeek"
 	plugged(t, spec, false)

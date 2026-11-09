@@ -161,6 +161,7 @@ func TestSearchAPIKeyInQueryNotArchived(t *testing.T) {
 // refusal it threw.
 func TestPluginSearchAPIRoutedAndArchived(t *testing.T) {
 	fresh(t)
+	forgetSearchKeys()
 	const spec = "@acme/opencode-mojeek-search@1.0.0"
 	const id = "mojeek-search:mojeek"
 	plugged(t, spec, false)
